@@ -16,6 +16,8 @@ Create an HTML file with script tags in order, per the example index.html file i
 
 To lock coins into a Bitcoin script at a specified block height, call the lock coins function specifying the address to lock coins to (and corresponding private key that can unlock), block height to lock to, and amount of satoshis to lock.
 
+The locking script is implemented via [sCrypt](https://scrypt.io/) [in this repository](https://github.com/shruggr/lockup), by [shruggr](https://github.com/shruggr).
+
 Optionally, specify a private key in WIF format to sign bSocial functions via [AIP (Author Identity Protocol)](https://github.com/attilaaf/AUTHOR_IDENTITY_PROTOCOL).
 
 Specify text content to embed a bSocial Post OR a txid to Like. If Liking, optionally specify an emoji - see [Loolock Clout Theory (LCT)](https://jadwahab.gitbook.io/loolock-clout-theory-lct/) for more details and inspiration.
