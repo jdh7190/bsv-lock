@@ -43,7 +43,7 @@ This function will fetch the raw transaction from WhatsOnChain, create the input
 
 An output will be created with the locked amount of satoshis, subtracting 1 satoshi to pay the transaction fee.
 
-The solution is created for the locking script which is:
+The solution is created for the locking script which is formatted like so:
 
 ```
 <Signature> <PublicKey> <preimage>
