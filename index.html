@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <script src="./scripts/bsv.browser.min.js"></script>
+        <script src="./scripts/message.js"></script>
+        <script src="./scripts/bSocial.js"></script>
+        <script src="./scripts/bSocialPost.js"></script>
+        <script src="./scripts/bSocialLike.js"></script>
+        <script src="./scripts/bHelpers.js"></script>
+        <script src="./scripts/SHUAllet.js"></script>
+        <script src="./scripts/locks.js"></script>
+    </head>
+    Txid<input id="txid">
+    <button id="unlock" onclick="unlocker()">Unlock</button>
+    Raw tx<textarea id="raw"></textarea>
+    <div>
+        WIF<input id="pkWif">
+        Receive Address<input id="receiveAddress">
+    </div>
+</html>
+<script>
+    const unlocker = async(pkWIF, address) => {
+        try {
+            if (!pkWIF) pkWIF = document.getElementById('pkWif').value;
+            if (!address) address = document.getElementById('receiveAddress').value;
+            const txid = document.getElementById('txid').value;
+            const rawtx = await unlockCoins(pkWIF, address, txid)
+            raw.innerText = rawtx;
+        } catch(e) {
+            console.log(e);
+            alert(e);
+        }
+    }
+</script>
