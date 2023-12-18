@@ -6,28 +6,142 @@
         <script src="./scripts/bSocialPost.js"></script>
         <script src="./scripts/bSocialLike.js"></script>
         <script src="./scripts/bHelpers.js"></script>
-        <script src="./scripts/SHUAllet.js"></script>
-        <script src="./scripts/locks.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
     </head>
-    Txid<input id="txid">
-    <button id="unlock" onclick="unlocker()">Unlock</button>
-    Raw tx<textarea id="raw"></textarea>
-    <div>
-        WIF<input id="pkWif">
-        Receive Address<input id="receiveAddress">
-    </div>
-</html>
-<script>
-    const unlocker = async(pkWIF, address) => {
-        try {
-            if (!pkWIF) pkWIF = document.getElementById('pkWif').value;
-            if (!address) address = document.getElementById('receiveAddress').value;
-            const txid = document.getElementById('txid').value;
-            const rawtx = await unlockCoins(pkWIF, address, txid)
-            raw.innerText = rawtx;
-        } catch(e) {
-            console.log(e);
-            alert(e);
+    <body class="p-4 lg:flex lg:space-x-4">
+        <div>
+            <label for="network" class="block text-sm font-medium text-gray-600">Select Network:</label>
+            <div class="mt-1 mb-2 relative border">
+              <select id="network" name="network" class="block w-full py-2 pl-3 pr-10 mt-1 text-base border-gray-300 focus:outline-none focus:ring focus:border-blue-300 sm:text-sm rounded-md">
+                <option value="mainnet" selected>Main</option>
+                <option value="testnet">Test</option>
+              </select>
+            </div>
+            <button class="bg-blue-500 text-white py-1 px-2 rounded-sm " id="setupWallet" onclick="setupWallet()">Setup Wallet</button>
+            <button class="bg-blue-500 text-white py-1 px-2 rounded-md" id="logout" onclick="handleLogout()">Logout</button>
+            <input type="file" id="uploadFile" accept=".json" hidden>
+            <div class="flex flex-col space-y-2 mt-2">
+                <!-- <label for="pkWif" class="text-sm font-semibold">WIF</label>
+                <input id="pkWif" class="border border-gray-300 p-1 rounded-sm"> -->
+                <label for="address" class="text-sm font-semibold">Current Wallet Address</label>
+                <input id="address" readonly class="border border-gray-300 p-2 rounded-md">    
+            </div>
+        </div>
+        <div class="flex flex-col space-y-4 lg:w-1/3">
+            <div class="text-2xl font-bold my-4">Lock Coin</div>
+            <div class="flex flex-col space-y-2">    
+                <label for="blockHeight" class="text-lg font-semibold">Block Height</label>
+                <input id="blockHeight" class="border border-gray-300 p-2 rounded-md">
+        
+                <label for="satoshis" class="text-lg font-semibold">Amount(sat)</label>
+                <input id="satoshis" class="border border-gray-300 p-2 rounded-md">
+
+            </div>
+        
+            <button id="lock" onclick="locker()" class="bg-blue-500 text-white p-2 rounded-md">Lock</button>
+        
+            <label for="raw1" class="text-lg font-semibold">Raw tx</label>
+            <textarea id="raw1" class="border border-gray-300 p-2 rounded-md"></textarea>
+            <button id="unlock" onclick="broadcastTx(document.getElementById('raw1').value)" class="bg-blue-500 text-white p-2 rounded-md">Broadcast</button>
+        </div>       
+        <div class="flex flex-col space-y-4 lg:w-1/3">
+            <div class="text-2xl font-bold my-4">Unlock Coin</div>
+
+            <div class="flex flex-col space-y-2">
+                <label for="txid" class="text-lg font-semibold">Txid</label>
+                <input id="txid" class="border border-gray-300 p-2 rounded-md">
+            
+                <label for="receiveAddress" class="text-lg font-semibold">Receive Address</label>
+                <input id="receiveAddress" class="border border-gray-300 p-2 rounded-md">
+            </div>
+        
+            <button id="unlock" onclick="unlocker()" class="bg-blue-500 text-white p-2 rounded-md">Unlock</button>
+        
+            <label for="raw" class="text-lg font-semibold">Raw tx</label>
+            <textarea id="raw" class="border border-gray-300 p-2 rounded-md"></textarea>
+            <button id="unlock" onclick="broadcastTx(document.getElementById('raw').value)" class="bg-blue-500 text-white p-2 rounded-md">Broadcast</button>
+        </div>
+    </body>
+    <script>
+        const setupWalletBtn = document.getElementById('setupWallet');
+        const logoutBtn = document.getElementById('logout');
+
+        const handleBtnDisplay = () => {
+            console.trace();
+            setupWalletBtn.style.display = 'none';
+            logoutBtn.style.display = 'none';
+            if (localStorage.getItem('walletAddress')) {
+                logoutBtn.style.display = '';
+                const addressInput = document.getElementById('address');
+                addressInput.value = localStorage.getItem('walletAddress');
+            } else {
+                setupWalletBtn.style.display = '';
+            }
         }
-    }
-</script>
+        handleBtnDisplay();
+
+        const locker = async() => {
+            try {
+                const pkWIF = localStorage.getItem('walletKey');
+                const address = localStorage.getItem('walletAddress');
+                const satoshis = document.getElementById('satoshis').value;
+                const blockHeight = document.getElementById('blockHeight').value;
+                const lockOutput = lockCoins(address, blockHeight, Number(satoshis), pkWIF);
+                const rawtx = await payForRawTx(lockOutput);
+                const raw1 = document.getElementById('raw1');
+                raw1.innerText = rawtx;
+            } catch(e) {
+                console.log(e); 
+                alert(e);
+            }
+        }
+        const unlocker = async() => {
+            try {
+                const pkWIF = localStorage.getItem('walletKey');
+                const address = document.getElementById('receiveAddress').value;
+                const txid = document.getElementById('txid').value;
+                const rawtx = await unlockCoins(pkWIF, address, txid)
+                const raw = document.getElementById('raw');
+                raw.innerText = rawtx;
+            } catch(e) {
+                console.log(e);
+                alert(e);
+            }
+        }
+        const broadcastTx = async(raw) => {
+            try {
+                let res = await broadcast(raw);
+                alert(`Broadcast Success! tx id: ${res}`);
+            } catch(e) {
+                console.log(e);
+                alert(e);
+            }
+        }
+        
+        document.getElementById('network').addEventListener('change', function() {
+            var selectedValue = this.value;
+            console.log('Selected Network:', selectedValue);
+            bsv.Networks.defaultNetwork = bsv.Networks[selectedValue];
+        });
+
+        function handleStorageChange(event) {
+            console.log('debug', event);
+            handleBtnDisplay();
+        }
+
+        const handleLogout = () => {
+            if (localStorage.getItem('walletKey')) {
+                const conf = confirm(`Are you sure you want to logout?
+
+        If so, please ensure your wallet is backed up first!`);
+                if (!conf) return;
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        window.addEventListener('walletSetupDone', handleStorageChange);
+    </script>
+    <script src="./scripts/SHUAllet.js"></script>
+    <script src="./scripts/locks.js"></script>
+</html>
