@@ -1,33 +1,189 @@
 <html>
     <head>
+        <title>BSV Lock and Unlock Tool</title>
         <script src="./scripts/bsv.browser.min.js"></script>
         <script src="./scripts/message.js"></script>
         <script src="./scripts/bSocial.js"></script>
         <script src="./scripts/bSocialPost.js"></script>
         <script src="./scripts/bSocialLike.js"></script>
         <script src="./scripts/bHelpers.js"></script>
-        <script src="./scripts/SHUAllet.js"></script>
-        <script src="./scripts/locks.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
     </head>
-    Txid<input id="txid">
-    <button id="unlock" onclick="unlocker()">Unlock</button>
-    Raw tx<textarea id="raw"></textarea>
-    <div>
-        WIF<input id="pkWif">
-        Receive Address<input id="receiveAddress">
-    </div>
-</html>
-<script>
-    const unlocker = async(pkWIF, address) => {
-        try {
-            if (!pkWIF) pkWIF = document.getElementById('pkWif').value;
-            if (!address) address = document.getElementById('receiveAddress').value;
-            const txid = document.getElementById('txid').value;
-            const rawtx = await unlockCoins(pkWIF, address, txid)
-            raw.innerText = rawtx;
-        } catch(e) {
-            console.log(e);
-            alert(e);
+    <body>
+        <div class="p-4 lg:flex lg:space-x-4">
+            <div>
+                <label for="network" class="block text-sm font-medium text-gray-600">Select Network:</label>
+                <div class="mt-1 mb-2 relative">
+                    <select id="network" name="network"
+                        class="block w-full py-2 pl-3 pr-10 mt-1 text-base border focus:outline-none focus:ring focus:border-blue-300 sm:text-sm rounded-md">
+                        <option value="mainnet" selected>Main</option>
+                        <option value="testnet">Test</option>
+                    </select>
+                </div>
+                <button class="bg-blue-500 text-white py-1 px-2 rounded-sm " id="setupWallet" onclick="setupWallet()">Setup
+                    Wallet</button>
+                <button class="bg-blue-500 text-white py-1 px-2 rounded-md" id="logout"
+                    onclick="handleLogout()">Logout</button>
+                <input type="file" id="uploadFile" accept=".json" hidden>
+                <div class="flex flex-col space-y-2 mt-2">
+                    <!-- <label for="pkWif" class="text-sm font-semibold">WIF</label>
+                        <input id="pkWif" class="border border-gray-300 p-1 rounded-sm"> -->
+                    <label for="address" class="text-sm font-semibold">Current Wallet Address</label>
+                    <input id="address" readonly class="border border-gray-300 p-2 rounded-md">
+                </div>
+            </div>
+            <div class="flex flex-col space-y-4 lg:w-1/3">
+                <div class="text-2xl font-bold my-4">Lock Coin</div>
+                <div class="flex flex-col space-y-2">
+                    <div style="display: flex; align-items: center;">
+                        <label for="blockHeight" class="text-lg font-semibold">Block Height</label>
+                        <span style="" class="ml-1 mt-1">
+                            <a href="https://plugins.whatsonchain.com/api/plugin/main/66b482f4f957a9761607963687d7798d0c38296ae095b9fb47ef7a76761d639f/0"
+                                target="_blank" title="BSV Block to Time Converter"><sup>?</sup></a>
+                        </span>
+                        <div class="group relative">
+                            <span class="text-red-500 py-2 px-4 cursor-pointer inline-block">
+                                Risk disclaimer
+                            </span>
+                            <div
+                                class="absolute bg-gray-100 shadow-lg p-4 rounded-lg mt-2 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300">
+                                <p>Be careful. If the Block Height is set incorrectly, it could lead to your coins being
+                                    locked for a long time.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <input id="blockHeight" type="number" class="border border-gray-300 p-2 rounded-md">
+                    <label for="satoshis" class="text-lg font-semibold">Amount(sat)</label>
+                    <input id="satoshis" type="number" class="border border-gray-300 p-2 rounded-md">
+    
+                </div>
+    
+                <button id="lock" onclick="locker()" class="bg-blue-500 text-white p-2 rounded-md">Lock</button>
+    
+                <label for="raw1" class="text-lg font-semibold">Raw tx</label>
+                <textarea id="raw1" class="border border-gray-300 p-2 rounded-md"></textarea>
+                <button id="unlock" onclick="broadcastTx(document.getElementById('raw1').value)"
+                    class="bg-blue-500 text-white p-2 rounded-md">Broadcast</button>
+            </div>
+            <div class="flex flex-col space-y-4 lg:w-1/3">
+                <div class="text-2xl font-bold my-4">Unlock Coin</div>
+    
+                <div class="flex flex-col space-y-2">
+                    <label for="txid" class="text-lg font-semibold">Txid</label>
+                    <input id="txid" class="border border-gray-300 p-2 rounded-md">
+    
+                    <label for="receiveAddress" class="text-lg font-semibold">Receive Address</label>
+                    <input id="receiveAddress" class="border border-gray-300 p-2 rounded-md">
+                </div>
+    
+                <button id="unlock" onclick="unlocker()" class="bg-blue-500 text-white p-2 rounded-md">Unlock</button>
+    
+                <label for="raw" class="text-lg font-semibold">Raw tx</label>
+                <textarea id="raw" class="border border-gray-300 p-2 rounded-md"></textarea>
+                <button id="unlock" onclick="broadcastTx(document.getElementById('raw').value)"
+                    class="bg-blue-500 text-white p-2 rounded-md">Broadcast</button>
+            </div>
+        </div>
+        <div class="fixed top-3 right-6">
+            <a href="https://github.com/cyio/bsv-lock" target="_blank" rel="noopener noreferrer" class="text-gray-600 hover:text-gray-900">
+              <svg class="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.488.5.092.682-.218.682-.482 0-.237-.009-.866-.014-1.7-2.782.604-3.37-1.338-3.37-1.338-.454-1.152-1.108-1.46-1.108-1.46-.906-.618.069-.605.069-.605 1.002.07 1.529 1.03 1.529 1.03.89 1.526 2.338 1.085 2.912.829.091-.644.348-1.085.634-1.335-2.22-.25-4.555-1.112-4.555-4.937 0-1.09.39-1.985 1.03-2.68-.103-.252-.448-1.268.097-2.64 0 0 .837-.268 2.75 1.022a9.61 9.61 0 012.507-.337 9.616 9.616 0 012.507.337c1.913-1.29 2.748-1.022 2.748-1.022.548 1.372.202 2.388.1 2.64.64.695 1.028 1.59 1.028 2.68 0 3.834-2.339 4.684-4.567 4.928.359.308.678.916.678 1.847 0 1.334-.012 2.411-.012 2.737 0 .267.18.577.688.48A12.006 12.006 0 0022 12c0-5.523-4.477-10-10-10z"/></svg>
+            </a>
+        </div>          
+    </body>
+    <script>
+        const setupWalletBtn = document.getElementById('setupWallet');
+        const logoutBtn = document.getElementById('logout');
+
+        const handleBtnDisplay = () => {
+            console.trace();
+            setupWalletBtn.style.display = 'none';
+            logoutBtn.style.display = 'none';
+            if (localStorage.getItem('walletAddress')) {
+                logoutBtn.style.display = '';
+                const addressInput = document.getElementById('address');
+                addressInput.value = localStorage.getItem('walletAddress');
+            } else {
+                setupWalletBtn.style.display = '';
+            }
         }
-    }
-</script>
+        handleBtnDisplay();
+
+        const locker = async() => {
+            try {
+                const pkWIF = localStorage.getItem('walletKey');
+                const address = localStorage.getItem('walletAddress');
+                const satoshis = document.getElementById('satoshis').value;
+                const blockHeight = document.getElementById('blockHeight').value;
+                if (!blockHeight) {
+                    alert('blockHeight not valid, please check!')
+                    return;
+                }
+                const lockOutput = lockCoins(address, Number(blockHeight), Number(satoshis), pkWIF);
+                const rawtx = await payForRawTx(lockOutput);
+                const raw1 = document.getElementById('raw1');
+                raw1.innerText = rawtx;
+            } catch(e) {
+                console.log(e); 
+                alert(e);
+            }
+        }
+        const unlocker = async() => {
+            try {
+                const pkWIF = localStorage.getItem('walletKey');
+                const address = document.getElementById('receiveAddress').value;
+                const txid = document.getElementById('txid').value;
+                const rawtx = await unlockCoins(pkWIF, address, txid)
+                const raw = document.getElementById('raw');
+                raw.innerText = rawtx;
+            } catch(e) {
+                console.log(e);
+                alert(e);
+            }
+        }
+        const broadcastTx = async(raw) => {
+            try {
+                let res = await broadcast(raw);
+                alert(`Broadcast Result: ${res}`);
+            } catch(e) {
+                console.log(e);
+                alert(e);
+            }
+        }
+        
+        document.getElementById('network').addEventListener('change', function() {
+            var selectedValue = this.value;
+            console.log('Selected Network:', selectedValue);
+            bsv.Networks.defaultNetwork = bsv.Networks[selectedValue];
+        });
+
+        function handleStorageChange(event) {
+            console.log('debug', event);
+            handleBtnDisplay();
+        }
+
+        const handleLogout = () => {
+            if (localStorage.getItem('walletKey')) {
+                const conf = confirm(`Are you sure you want to logout?
+
+        If so, please ensure your wallet is backed up first!`);
+                if (!conf) return;
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        window.addEventListener('walletSetupDone', handleStorageChange);
+    </script>
+    <script src="./scripts/SHUAllet.js"></script>
+    <script src="./scripts/locks.js"></script>
+    <style>
+        select {
+            /** for the dropdown indicator */
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+    </style>
+</html>

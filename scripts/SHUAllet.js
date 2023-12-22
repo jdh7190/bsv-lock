@@ -13,18 +13,21 @@ const getUTXO = (rawtx, idx) => {
         script: bsvtx.outputs[idx].script.toHex()
     }
 }
+const getNetwork = () => {
+    return bsv.Networks.defaultNetwork.name === 'livenet' ? 'main' : 'test';
+}
 const getUTXOs = async address => {
-    const r = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/unspent`);
+    const r = await fetch(`https://api.whatsonchain.com/v1/bsv/${getNetwork()}/address/${address}/unspent`);
     const res = await r.json();
     return res;
 }
 const getRawtx = async txid => {
-    const r = await fetch(`https://api.whatsonchain.com/v1/bsv/main/tx/${txid}/hex`);
+    const r = await fetch(`https://api.whatsonchain.com/v1/bsv/${getNetwork()}/tx/${txid}/hex`);
     const raw = await r.text();
     return raw;
 }
 const broadcast = async txhex => {
-    const r = await (await fetch(`https://api.whatsonchain.com/v1/bsv/main/tx/raw`, {
+    const r = await (await fetch(`https://api.whatsonchain.com/v1/bsv/${getNetwork()}/tx/raw`, {
         method: 'post',
         body: JSON.stringify({ txhex })
     })).json();
@@ -149,6 +152,8 @@ const restoreWallet = (oPK, pPk) => {
     localStorage.walletAddress = address.toString();
     localStorage.walletKey = pkWif;
     localStorage.ownerPublicKey = ownerPk.toPublicKey().toHex();
+    const storageEvent = new Event('walletSetupDone');
+    window.dispatchEvent(storageEvent);
 }
 const payForRawTx = async rawtx => {
     const bsvtx = bsv.Transaction(rawtx);
